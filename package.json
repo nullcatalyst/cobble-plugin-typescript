@@ -1,0 +1,36 @@
+{
+    "name": "cobble-plugin-typescript",
+    "version": "0.1.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "tsc",
+        "test": "mocha --require ts-node/register --extensions ts 'src/tests/**/*.ts'"
+    },
+    "author": {
+        "name": "Scott Bennett",
+        "email": "scottbennett912@gmail.com"
+    },
+    "license": "MIT",
+    "peerDependencies": {
+        "cobble": "github:nullcatalyst/cobble",
+        "typescript": "*"
+    },
+    "dependencies": {
+        "@rollup/plugin-commonjs": "^21.0.1",
+        "@rollup/plugin-node-resolve": "^13.0.6",
+        "@rollup/plugin-replace": "^3.0.0",
+        "@rollup/plugin-typescript": "^8.3.0",
+        "rollup": "^2.60.1",
+        "rollup-plugin-typescript2": "^0.31.1"
+    },
+    "devDependencies": {
+        "@types/mocha": "^9.0.0",
+        "@types/node": "^16.11.10",
+        "cobble": "github:nullcatalyst/cobble",
+        "mocha": "^9.1.3",
+        "nyc": "^15.1.0",
+        "ts-node": "^10.4.0",
+        "typescript": "^4.5.2"
+    }
+}
