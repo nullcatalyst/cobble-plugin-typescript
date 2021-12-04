@@ -25,9 +25,12 @@ export class TypescriptPlugin extends cobble.BasePlugin {
         watcher: cobble.BaseWatcher,
         settings: cobble.BuildSettings,
     ): Promise<cobble.ResetPluginWatchedFilesFn> {
-        const inputContents = this.filterSrcs(settings)
-            .map(src => `import "${src.path.toString().replaceAll('\\', '/')}";\n`)
-            .join('');
+        const srcs = this.filterSrcs(settings);
+        if (srcs.length == 0) {
+            return () => {};
+        }
+        const inputContents = srcs.map(src => `import "${src.path.toString().replaceAll('\\', '/')}";\n`).join('');
+
         const inputName = '__virtual__';
 
         const pluginSettings = settings.pluginSettings<TypescriptSettings>(this);
