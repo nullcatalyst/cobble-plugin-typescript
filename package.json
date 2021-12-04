@@ -1,6 +1,6 @@
 {
     "name": "cobble-plugin-typescript",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -14,6 +14,7 @@
     "license": "MIT",
     "peerDependencies": {
         "cobble": "github:nullcatalyst/cobble",
+        "terser": "*",
         "typescript": "*"
     },
     "dependencies": {
@@ -30,6 +31,7 @@
         "cobble": "github:nullcatalyst/cobble",
         "mocha": "^9.1.3",
         "nyc": "^15.1.0",
+        "terser": "^5.10.0",
         "ts-node": "^10.4.0",
         "typescript": "^4.5.2"
     }

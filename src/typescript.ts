@@ -2,20 +2,17 @@ import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
-import { BuildSettings } from 'cobble/lib/composer/settings';
-import { BasePlugin, ResetPluginWatchedFilesFn } from 'cobble/lib/plugins/base';
-import { createMailbox } from 'cobble/lib/util/mailbox';
-import { BaseWatcher } from 'cobble/lib/watcher/base';
-import { Event, EventType } from 'cobble/lib/watcher/event';
+import * as cobble from 'cobble';
 import * as fs from 'fs';
 import * as rollup from 'rollup';
+import * as terser from 'terser';
 import * as ts from 'typescript';
 
-export class TypescriptPlugin extends BasePlugin {
-    constructor(opts?: any) {
-        super(opts);
-    }
+export type TypescriptSettings = Partial<{
+    'config': string;
+}>;
 
+export class TypescriptPlugin extends cobble.BasePlugin {
     override name(): string {
         return 'ts';
     }
@@ -24,13 +21,20 @@ export class TypescriptPlugin extends BasePlugin {
         return ['ts', 'tsx'];
     }
 
-    override async process(watcher: BaseWatcher, settings: BuildSettings): Promise<ResetPluginWatchedFilesFn> {
-        const srcs = settings.srcs.filter(src => src.protocol == this.name());
-        const inputContents = srcs.map(src => `import "${src.path.toString().replaceAll('\\', '/')}";\n`).join('');
+    override async process(
+        watcher: cobble.BaseWatcher,
+        settings: cobble.BuildSettings,
+    ): Promise<cobble.ResetPluginWatchedFilesFn> {
+        const inputContents = this.filterSrcs(settings)
+            .map(src => `import "${src.path.toString().replaceAll('\\', '/')}";\n`)
+            .join('');
         const inputName = '__virtual__';
 
+        const pluginSettings = settings.pluginSettings<TypescriptSettings>(this);
+        const tsconfig = settings.basePath.join(pluginSettings['config'] || 'tsconfig.json');
+
         const watchedFiles: { [filePath: string]: () => void } = {};
-        const build = createMailbox(async () => {
+        const build = cobble.createMailbox(async () => {
             const bundle = await rollup.rollup({
                 input: inputName,
                 plugins: [
@@ -50,7 +54,7 @@ export class TypescriptPlugin extends BasePlugin {
                     typescript({
                         module: 'esnext',
                         // TODO: Make it so that the tsconfig is not required
-                        tsconfig: settings.raw('tsconfig') || settings.basePath.join('tsconfig.json').toString(),
+                        tsconfig: tsconfig.toString(),
                         // TODO: This appears to be a bug in @rollup/plugin-typescript, it requires a root directory to be set for it to work
                         rootDir: settings.basePath.toString(),
                         include: [inputName, '*.ts', '**/*.ts'],
@@ -117,11 +121,34 @@ export class TypescriptPlugin extends BasePlugin {
                     // }
                 }
             }
-
-            await fs.promises.writeFile(settings.outputPath.toString(), outputContents);
             await bundle.close();
+
+            if (this.release) {
+                const result = await terser.minify(outputContents, {
+                    compress: true,
+                    toplevel: true,
+                    mangle: {
+                        keep_classnames: false,
+                        keep_fnames: false,
+                        module: false,
+                        properties: {
+                            builtins: false,
+                            debug: false,
+                            keep_quoted: true,
+                            regex: /^_/,
+                        },
+                        toplevel: true,
+                    },
+                    output: {
+                        comments: false,
+                    },
+                });
+                outputContents = result.code;
+            }
+
+            await fs.promises.writeFile(settings.outDir.join(`${settings.name}.js`).toString(), outputContents);
         });
-        await build(new Event(EventType.AddFile, settings.outputPath));
+        await build(new cobble.Event(cobble.EventType.AddFile, settings.outDir));
 
         return async () => {
             for (const [filePath, cleanup] of Object.entries(watchedFiles)) {

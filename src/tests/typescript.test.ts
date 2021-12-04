@@ -1,12 +1,9 @@
 import * as assert from 'assert';
-import { BuildSettings } from 'cobble/lib/composer/settings';
-import { ResolvedPath } from 'cobble/lib/util/resolved_path';
-import { FakeWatcher } from 'cobble/lib/watcher/fake';
-import { Event, EventType } from 'cobble/lib/watcher/event';
+import * as cobble from 'cobble';
 import * as fs from 'fs';
 
 import * as tmp from 'tmp-promise';
-import { TypescriptPlugin } from '../typescript';
+import { TypescriptPlugin, TypescriptSettings } from '../typescript';
 
 describe('typescript plugin', () => {
     const defer: (() => void)[] = [];
@@ -19,7 +16,7 @@ describe('typescript plugin', () => {
         const { path: dirPath, cleanup: dirCleanup } = await tmp.dir({ unsafeCleanup: true });
         defer.push(dirCleanup);
 
-        const basePath = ResolvedPath.absolute(dirPath);
+        const basePath = cobble.ResolvedPath.absolute(dirPath);
         const ts1FilePath = basePath.join('a.ts');
         const ts2FilePath = basePath.join('b.ts');
         const tsconfigFilePath = basePath.join('tsconfig.json');
@@ -27,15 +24,17 @@ describe('typescript plugin', () => {
         await fs.promises.writeFile(ts2FilePath.toString(), 'window.alert("world");');
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new FakeWatcher();
-        const plugin = new TypescriptPlugin({});
-        const settings = new BuildSettings('linux');
-        await settings.load(
+        const watcher = new cobble.FakeWatcher();
+        const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
+        const settings = await cobble.BuildSettings.from(
             {
                 'name': 'test',
                 'srcs': [`${plugin.name()}:${ts1FilePath.toString()}`, `${plugin.name()}:${ts2FilePath.toString()}`],
             },
-            basePath.join('build.json'),
+            {
+                'basePath': basePath,
+                'pluginNames': [plugin.name()],
+            },
         );
 
         const cleanup = await plugin.process(watcher, settings);
@@ -48,7 +47,7 @@ describe('typescript plugin', () => {
         const { path: dirPath, cleanup: dirCleanup } = await tmp.dir({ unsafeCleanup: true });
         defer.push(dirCleanup);
 
-        const basePath = ResolvedPath.absolute(dirPath);
+        const basePath = cobble.ResolvedPath.absolute(dirPath);
         const ts1FilePath = basePath.join('a.ts');
         const ts2FilePath = basePath.join('b.ts');
         const tsconfigFilePath = basePath.join('tsconfig.json');
@@ -59,16 +58,20 @@ describe('typescript plugin', () => {
         );
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new FakeWatcher();
-        const plugin = new TypescriptPlugin({});
-        const settings = new BuildSettings('linux');
-        await settings.load(
+        const watcher = new cobble.FakeWatcher();
+        const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
+        const settings = await cobble.BuildSettings.from<{ ts: TypescriptSettings }>(
             {
                 'name': 'test',
                 'srcs': [`${plugin.name()}:${ts1FilePath.toString()}`],
-                'tsconfig': tsconfigFilePath.toString(),
-            } as any,
-            basePath.join('build.json'),
+                'ts': {
+                    'config': tsconfigFilePath.toString(),
+                },
+            },
+            {
+                'basePath': basePath,
+                'pluginNames': [plugin.name()],
+            },
         );
 
         const cleanup = await plugin.process(watcher, settings);
@@ -81,7 +84,7 @@ describe('typescript plugin', () => {
         const { path: dirPath, cleanup: dirCleanup } = await tmp.dir({ unsafeCleanup: true });
         defer.push(dirCleanup);
 
-        const basePath = ResolvedPath.absolute(dirPath);
+        const basePath = cobble.ResolvedPath.absolute(dirPath);
         const ts1FilePath = basePath.join('a.ts');
         const ts2FilePath = basePath.join('b.ts');
         const tsconfigFilePath = basePath.join('tsconfig.json');
@@ -92,16 +95,20 @@ describe('typescript plugin', () => {
         );
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new FakeWatcher();
-        const plugin = new TypescriptPlugin({});
-        const settings = new BuildSettings('linux');
-        await settings.load(
+        const watcher = new cobble.FakeWatcher();
+        const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
+        const settings = await cobble.BuildSettings.from<{ ts: TypescriptSettings }>(
             {
                 'name': 'test',
                 'srcs': [`${plugin.name()}:${ts1FilePath.toString()}`],
-                'tsconfig': tsconfigFilePath.toString(),
-            } as any,
-            basePath.join('build.json'),
+                'ts': {
+                    'config': tsconfigFilePath.toString(),
+                },
+            },
+            {
+                'basePath': basePath,
+                'pluginNames': [plugin.name()],
+            },
         );
 
         // First build
@@ -110,7 +117,7 @@ describe('typescript plugin', () => {
 
         // Change file and rebuild
         await fs.promises.writeFile(ts1FilePath.toString(), 'window.alert(4);');
-        await watcher.emit(new Event(EventType.ChangeFile, ts1FilePath));
+        await watcher.emit(new cobble.Event(cobble.EventType.ChangeFile, ts1FilePath));
         assert.strictEqual(watcher.callbacks.size, 1);
 
         // Cleanup
