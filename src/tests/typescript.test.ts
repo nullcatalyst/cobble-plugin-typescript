@@ -24,7 +24,7 @@ describe('typescript plugin', () => {
         await fs.promises.writeFile(ts2FilePath.toString(), 'window.alert("world");');
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new cobble.FakeWatcher();
+        const watcher = new cobble.FakeWatcher(0);
         const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
         const settings = await cobble.BuildSettings.from(
             {
@@ -58,7 +58,7 @@ describe('typescript plugin', () => {
         );
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new cobble.FakeWatcher();
+        const watcher = new cobble.FakeWatcher(0);
         const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
         const settings = await cobble.BuildSettings.from<{ ts: TypescriptSettings }>(
             {
@@ -95,7 +95,7 @@ describe('typescript plugin', () => {
         );
         await fs.promises.writeFile(tsconfigFilePath.toString(), '{}');
 
-        const watcher = new cobble.FakeWatcher();
+        const watcher = new cobble.FakeWatcher(0);
         const plugin = new TypescriptPlugin({ 'tmp': basePath.join('tmp'), 'verbose': 0 });
         const settings = await cobble.BuildSettings.from<{ ts: TypescriptSettings }>(
             {
